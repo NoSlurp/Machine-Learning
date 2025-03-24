@@ -1,4 +1,19 @@
 TextbookComb
-// input the chapters of textbook
-// output keywords listed for us
-// ensuring 
+# Input: Raw textbook chapters, index, Wikipedia articles
+# Output: Preprocessed text, concept-relationship pairs
+
+def preprocess_data(chapters, index, wiki_articles):
+    # Text Normalization
+    normalized_chapters = []
+    for chapter in chapters:
+        lemmatized = lemmatize(chapter)
+        cleaned = remove_stopwords(lemmatized)
+        normalized_chapters.append(cleaned)
+
+    # Index Parsing
+    concept_pairs = parse_index(index)  # e.g., "CNNs → Applications" → ("CNNs", "Applications")
+
+    # External Data Integration
+    pretrain_corpus = combine(normalized_chapters, wiki_articles)
+
+    return normalized_chapters, concept_pairs, pretrain_corpus
