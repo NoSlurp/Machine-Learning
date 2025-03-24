@@ -1,1 +1,16 @@
 
+# Input: Preprocessed text (chapters + Wikipedia)
+# Output: Fine-tuned BERT model, extracted concepts
+
+def train_bert_model(pretrain_corpus, textbook_chapters):
+    # Pretraining on Wikipedia ML Articles
+    pretrained_bert = BERT.from_pretrained("bert-base-uncased")
+    pretrained_bert.train(pretrain_corpus, epochs=3)
+
+    # Fine-Tuning with BIO Tagging
+    labeled_sequences = apply_bio_tags(textbook_chapters)  # Tag terms as B/I/O
+    fine_tuned_bert = pretrained_bert.fine_tune(labeled_sequences, epochs=5)
+
+    # Extract Concepts
+    concepts = fine_tuned_bert.predict(textbook_chapters)
+    return concepts
