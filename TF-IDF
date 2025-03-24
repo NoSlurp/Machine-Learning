@@ -1,1 +1,8 @@
 
+# TF-IDF
+def extract_tfidf_terms(chapters):
+    tfidf_vectorizer = TfidfVectorizer()
+    tfidf_matrix = tfidf_vectorizer.fit_transform(chapters)
+    # Changed '15%' to 0.15 to represent 15 percent
+    top_terms = get_top_terms(tfidf_matrix, top_percent=0.15)
+    return top_terms
