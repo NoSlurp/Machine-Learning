@@ -1,4 +1,9 @@
 TextbookComb
+
+!pip install transformers spacy scikit-learn nltk yake pandas numpy pyvis
+!python -m spacy download en_core_web_sm
+
+
 # Input: Raw textbook chapters, index, Wikipedia articles
 # Output: Preprocessed text, concept-relationship pairs
 
@@ -17,3 +22,96 @@ def preprocess_data(chapters, index, wiki_articles):
     pretrain_corpus = combine(normalized_chapters, wiki_articles)
 
     return normalized_chapters, concept_pairs, pretrain_corpus
+
+
+
+# Input: Concept pairs, BERT embeddings
+# Output: Predicted relationships
+
+def train_ml_classifier(concept_pairs, embeddings):
+    X = []
+    y = []
+    for (concept1, concept2), label in concept_pairs:
+        embedding1 = embeddings[concept1]
+        embedding2 = embeddings[concept2]
+        X.append(concatenate(embedding1, embedding2))
+        y.append(label)
+
+    classifier = MLPClassifier(hidden_layer_sizes=(100,))
+    classifier.fit(X, y)
+    return classifier
+
+# Co-occurrence
+def co_occurrence_analysis(concepts, chapters):
+    relationships = {}
+    for section in chapters:
+        terms_in_section = [concept for concept in concepts if concept in section]
+        for pair in combinations(terms_in_section, 2):
+            relationships[pair] += 1
+    return filter_relationships(relationships, threshold=2)  # Min co-occurrence
+
+# Dependency Parsing (spaCy)
+def extract_is_a_relationships(chapters):
+    nlp = spacy.load("en_core_web_sm")
+    is_a_pairs = []
+    for doc in nlp.pipe(chapters):
+        for token in doc:
+            if token.dep_ == "attr" and token.head.text == "is":
+                subject = token.head.head.text
+                object = token.text
+                is_a_pairs.append((subject, "is-a", object))
+    return is_a_pairs
+
+def postprocess(concepts, relationships):
+    # Term Normalization
+    normalized_concepts = {}
+    for term in concepts:
+        normalized = map_to_index(term)  # e.g., "CNNs" → "Convolutional Neural Networks"
+        normalized_concepts[normalized] = term
+
+    # Filter Non-Pedagogical Terms
+    filtered_relationships = [
+        (c1, rel, c2) for c1, rel, c2 in relationships
+        if c1 in index_terms and c2 in index_terms
+    ]
+    return normalized_concepts, filtered_relationships
+
+
+
+def evaluate(extracted_concepts, gold_standard):
+    # Strict F1: Exact matches
+    strict_matches = set(extracted_concepts) & set(gold_standard)
+    strict_f1 = 2 * (precision * recall) / (precision + recall)
+
+    # Partial F1: Stemming/synonym matches
+    partial_matches = 0
+    for term in extracted_concepts:
+        if any(is_synonym(term, gold_term) for gold_term in gold_standard):
+            partial_matches += 1
+    partial_f1 = calculate_f1(partial_matches, len(gold_standard))
+
+    return strict_f1, partial_f1
+
+
+
+def main():
+    # Step 1: Preprocess Data
+    chapters, index, wiki = load_data()
+    preprocessed_data = preprocess_data(chapters, index, wiki)
+
+    # Step 2: Extract Concepts
+    bert_concepts = train_bert_model(preprocessed_data)
+    tfidf_concepts = extract_tfidf_terms(preprocessed_data)
+    yake_concepts = extract_yake_terms(preprocessed_data)
+
+    # Step 3: Extract Relationships
+    co_occurrence = co_occurrence_analysis(bert_concepts, chapters)
+    is_a_rels = extract_is_a_relationships(chapters)
+    classifier = train_ml_classifier(concept_pairs, bert_embeddings)
+
+    # Step 4: Postprocess
+    final_concepts, final_rels = postprocess(bert_concepts, co_occurrence + is_a_rels)
+
+    # Step 5: Evaluate
+    strict_f1, partial_f1 = evaluate(final_concepts, gold_standard=index)
+    print(f"Strict F1: {strict_f1:.2f}, Partial F1: {partial_f1:.2f}")
