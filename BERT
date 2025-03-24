@@ -14,3 +14,60 @@ def train_bert_model(pretrain_corpus, textbook_chapters):
     # Extract Concepts
     concepts = fine_tuned_bert.predict(textbook_chapters)
     return concepts
+
+
+
+!pip install transformers datasets accelerate
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+from transformers import BertTokenizer, BertForSequenceClassification, TrainingArguments, Trainer
+# ... (rest of your imports)
+
+def train_bert_model(pretrain_corpus, textbook_chapters):
+    # Pretraining on Wikipedia ML Articles
+    # Use BertForSequenceClassification for fine-tuning. Adjust num_labels as needed.
+    pretrained_bert = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=10) # Replace 10 with your actual number of labels for classification
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    # Fine-Tuning with BIO Tagging
+    labeled_sequences = apply_bio_tags(textbook_chapters)  # Tag terms as B/I/O
+    # Replace 'fine_tune' with actual fine-tuning logic using your preferred framework (e.g., Hugging Face Transformers)
+    # This is a placeholder, replace with your actual fine-tuning logic
+    #fine_tuned_bert = pretrained_bert # Placeholder
+
+    # Format your data for the Trainer
+    # This is a placeholder, you'll need to adapt it to your data structure
+    # Assume labeled_sequences is a list of lists of BIO tags
+    # and textbook_chapters is a list of corresponding text sequences
+    train_data = []
+    for text, labels in zip(textbook_chapters, labeled_sequences):
+        inputs = tokenizer(text, padding="max_length", truncation=True)
+        train_data.append({"input_ids": inputs["input_ids"], "attention_mask": inputs["attention_mask"], "labels": labels})
+
+    # Define training arguments
+    training_args = TrainingArguments(
+        output_dir="./results",
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=64,
+        num_train_epochs=5, # Adjust as needed
+        # ... other arguments as needed ...
+    )
+
+    # Create Trainer instance
+    trainer = Trainer(
+        model=pretrained_bert,
+        args=training_args,
+        train_dataset=train_data, # Replace with your actual training data
+    )
+
+    # Fine-tune the model
+    trainer.train()
+
+    # Extract Concepts
+    # Replace with actual concept extraction logic using the fine-tuned BERT model
+    # This is a placeholder
+    concepts = [] # Placeholder
+    #concepts = fine_tuned_bert.predict(textbook_chapters)
+    return concepts
