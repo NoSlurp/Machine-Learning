@@ -71,3 +71,34 @@ def train_bert_model(pretrain_corpus, textbook_chapters):
     concepts = [] # Placeholder
     #concepts = fine_tuned_bert.predict(textbook_chapters)
     return concepts
+
+def train_bert_model(textbook_chapters):
+    # Initialize tokenizer and model
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    model = BertForTokenClassification.from_pretrained(
+        "bert-base-uncased",
+        num_labels=3  # B, I, O tags
+    )
+
+    # Tokenize input and align labels (example)
+    tokenized_inputs = tokenizer(textbook_chapters, padding=True, truncation=True)
+
+    # Dummy labels (replace with your BIO-tagged data)
+    labels = [[0] * len(tokenized_inputs["input_ids"][i]) for i in range(len(textbook_chapters))]
+
+    # Train the model
+    training_args = TrainingArguments(
+        output_dir="./results",
+        num_train_epochs=3,
+        per_device_train_batch_size=16,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_inputs,
+        # Add your labeled dataset here
+    )
+
+    trainer.train()
+    return model
